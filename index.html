@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket.IO chat</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+    <style>
+        /* CSS styles for the chat interface */
+        body {
+            margin: 0;
+            padding-bottom: 3rem;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        #container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        #messages {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            max-height: 400px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            padding: 0.5rem;
+        }
+
+        #messages li {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 3px;
+            background-color: #f9f9f9;
+        }
+
+        #form {
+            display: flex;
+            margin-top: 1rem;
+        }
+
+        #input {
+            flex-grow: 1;
+            border: none;
+            border-radius: 3px;
+            padding: 0.5rem;
+            margin-right: 0.5rem;
+        }
+
+        #input:focus {
+            outline: none;
+        }
+
+        #form > button {
+            background: #333;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 3px;
+            color: #fff;
+            cursor: pointer;
+            outline: none;
+        }
+
+        /* Styles for the online users list */
+        #users {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            margin-top: 1rem;
+        }
+
+        #users > li {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 3px;
+            background-color: #f9f9f9;
+        }
+
+        /* Typing indicator */
+        #typing {
+            font-style: italic;
+            color: #aaa;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <!-- Chat messages will be displayed here -->
+        <ul id="messages"></ul>
+        <!-- List of online users will be displayed here -->
+        <ul id="users"></ul>
+        <!-- Form for sending messages -->
+        <form id="form" action="">
+            <input id="input" autocomplete="off" placeholder="Type your message..." />
+            <button>Send</button>
+        </form>
+        <!-- Element for displaying typing message -->
+        <div id="typing"></div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // Ask user for a nickname and emit 'new user' event with the nickname
+        let nickname = prompt("Please enter your nickname");
+        socket.emit('new user', nickname);
+
+        const form = document.getElementById('form');
+        const input = document.getElementById('input');
+        const messages = document.getElementById('messages');
+        const users = document.getElementById('users');
+        const typing = document.getElementById('typing');
+
+        // Handle form submission to send chat messages
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (input.value) {
+                socket.emit('chat message', input.value);
+                input.value = '';
+            }
+        });
+
+        // Handle incoming chat messages and display them in the messages list
+        socket.on('chat message', (msg) => {
+            messages.innerHTML += `<li>${msg.user}: ${msg.msg}</li>`;
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+
+        // Handle 'typing' event to display a message indicating who is typing
+        socket.on('typing', (user) => {
+            typing.innerText = `${user} is typing...`;
+        });
+
+        // Handle 'user joined' event to notify when a user joins the chat
+        socket.on('user joined', (user) => {
+            messages.innerHTML += `<li>${user} has joined the chat</li>`;
+        });
+
+        // Handle 'user left' event to notify when a user leaves the chat
+        socket.on('user left', (user) => {
+            messages.innerHTML += `<li>${user} has left the chat</li>`;
+        });
+
+        // Update the list of online users when it changes
+        socket.on('user online', (onlineUsers) => {
+            users.innerHTML = '';
+            onlineUsers.forEach((user) => {
+                users.innerHTML += `<li>${user}</li>`;
+            });
+        });
+
+        // Send 'typing' event when user starts typing a message
+        input.addEventListener('input', () => {
+            socket.emit('typing');
+        });
+    </script>
+</body>
+</html>
