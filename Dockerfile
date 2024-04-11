@@ -3,4 +3,4 @@ WORKDIR /app
 COPY . .
 EXPOSE 8080
 RUN npm install
-CMD ["npm","start" ]
+CMD ["node","index.js" ]
